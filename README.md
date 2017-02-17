@@ -1,9 +1,8 @@
 # Get-Weather script for PowerShell
 
-This script is a silly, but useful script to gather current weather conditions and a 7-Day forecast. 
-I've seen a lot of similar scripts, but I always saw OpenWeatherMap as the data source.
-This script is tailored to DarkSky (Formely Forecast.io), which is my preferred weather data provider.
-An API key will be required for DarkSky and Google's GeoCoding for pinpointing latitude and longitude. DarkSky allows up to 1000 free API calls per day.
+This script is a silly, but useful script to gather current weather conditions and a 7-Day forecast. I've seen a lot of similar scripts, but I always saw OpenWeatherMap as the data source.This script is tailored to DarkSky (Formely Forecast.io), which is my preferred weather data provider.An API key will be required for DarkSky and Google's GeoCoding for pinpointing latitude and longitude. DarkSky allows up to 1000 free API calls per day.
+
+I am a weather geek and an IT employee. I work in PowerShell almost daily because it thoroughly helps my workflow, so this script will make seeing the current weather conditions much easier. Even though I can see them on my watch... And phone.
 
 I am not fully done making this script and it's not the prettiest, but it is working perfectly right now.
 
@@ -16,12 +15,16 @@ I am not fully done making this script and it's not the prettiest, but it is wor
 
 At this moment, you need to load the script into memory by running it or by importing it into a modules folder. Don't forget to set your ExecutionPolicy to Bypass.
 
-Once the script has been loaded into memory there are ways to get weather data:
+Once the script has been loaded into memory there are two ways to get weather data:
 
 ``` powershell
 Get-Weather
+and
 Get-Weather -ZipCode <ZIPCODE>
 ```
+
+Running the command with no zipcode will load your location data from your public IP, so if you're behind a VPN... This will not pull your right location.
+
 Examples:
 ``` powershell
 Get-Weather
@@ -71,3 +74,6 @@ Tuesday   Mostly cloudy throughout the day.      67.13 (F) 43.64 (F)
 Wednesday Mostly cloudy throughout the day.      72.1 (F)  45.92 (F)
 Thursday  Light rain throughout the day.         70.4 (F)  55.07 (F)
 ```
+##Planned Updates
+
+Hopefully I can find some time to prevent weather data from being constantly downloaded every time the command is ran. I'm hoping to continuously update this script until it fits all of my personal needs, so expect plenty of new additions and changes (Especially to the structure of the code).
