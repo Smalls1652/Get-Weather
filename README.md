@@ -19,7 +19,7 @@ At this moment, you need to load the script into memory by running it or by impo
 Once the script has been loaded into memory there are ways to get weather data:
 
 ``` powershell
-Get- Weather
+Get-Weather
 Get-Weather -ZipCode <ZIPCODE>
 ```
 Examples:
