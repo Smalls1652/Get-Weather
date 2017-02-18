@@ -11,9 +11,29 @@ I am not fully done making this script and it's not the prettiest, but it is wor
 * A DarkSky API Key (https://darksky.net/dev/)
 * Google GeoCoding API Key (https://console.developers.google.com)
 
-##Usage
 
-At this moment, you need to load the script into memory by running it or by importing it into a modules folder. Don't forget to set your ExecutionPolicy to Bypass.
+##Installation
+1. Install the Get-Weather folder into one of these three folders:
+* C:\Users\<YOUR USERNAME>\Documents\WindowsPowerShell\Modules
+* C:\Program Files\WindowsPowerShell\Modules
+* C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+
+2. Open up the Get-Weather.psm1 file with a text editor and edit these two lines with the API keys from DarkSky and Google GeoCoding:
+```powershell
+$darkskyAPI = "" #Your Dark Sky API Key goes here
+$googlegeocodeAPI = "" #Your Google GeoCoding API key goes here
+```
+
+3. Save the file.
+
+4. In an admin Powershell console, run this command to allow unsigned scripts to run and make sure it's set to all:
+```powershell
+Set-ExecutionPolicy Bypass
+```
+
+5. The script is now able to run.
+
+##Usage
 
 Once the script has been loaded into memory there are two ways to get weather data:
 

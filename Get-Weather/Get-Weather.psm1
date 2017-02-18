@@ -1,138 +1,90 @@
-﻿<#
+﻿function Get-Weather {
+
+<#
 .SYNOPSIS
 Gets weather data from DarkSky and outputs it into the shell.
 
 .DESCRIPTION
 Gets weather data from DarkSky and outputs it into the shell. This data includes current conditions and a 7-day forecast for the current area or a specified zipcode.
 
-#>
+.PARAMETER ZipCode
+Manual zipcode to gather data for.
 
-function Get-Weather {
+.EXAMPLE
+# Show weather for the current location.
+Get-Weather
+
+.EXAMPLE
+# Get weather for a specific location through a zipcode.
+Get-Weather -ZipCode 36602
+
+#>
 
 [cmdletbinding()]
 param(
 
-[string]$zipcode
+[string]$ZipCode
 
 )
 
-$darkskyAPI = ""
-$googlegeocodeAPI = ""
+$darkskyAPI = "" #Your Dark Sky API Key goes here
+$googlegeocodeAPI = "" #Your Google GeoCoding API key goes here
 
 
 if (!$darkskyAPI -or !$googlegeocodeAPI)
 {
 
-Write-Error "An API key is missing."
-Break
+	Write-Error "An API key is missing."
+	Break
 }
 
-if ($zipcode)
+<#
+
+DarkSky uses latitude and longitude to get weather data, since it's a "hyperlocal" weather service. To make this easier to the user, the script must determine the latitude and longitude of their location.
+
+#>
+if ($ZipCode) #If the zipcode parameter has been supplied
 {
 
+<#
 
-$googleData = Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$zipcode&key=$googlegeocodeAPI"
+Google GeoCoding is used here to pinpoint the zipcode down to it's latitude and longitude.
 
-$geoLat = $googleData.results.geometry.location.lat;
-$geoLong = $googleData.results.geometry.location.lng
+#>
 
-$cityLocation = $googleData.results.formatted_address
+	$googleData = Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$ZipCode&key=$googlegeocodeAPI"
+
+	$geoLat = $googleData.results.geometry.location.lat;
+	$geoLong = $googleData.results.geometry.location.lng
+
+	$cityLocation = $googleData.results.formatted_address
 
 }
-else
+else #If the zipcode parameter was not supplied.
 {
-$publicInfo = Invoke-RestMethod http://ipinfo.io/json
+<#
 
-$publicIP = $publicInfo | Select-Object -ExpandProperty ip
-$geoLoc = Invoke-RestMethod -Method Get -Uri http://freegeoip.net/json/$publicIP
-$publicCity = Invoke-RestMethod http://ipinfo.io/json | Select -ExpandProperty city
-$publicRegion = Invoke-RestMethod http://ipinfo.io/json | Select -ExpandProperty region
+Public IP reverse lookup is used here to pinpoint the zipcode down to it's latitude and longitude.
 
-$cityLocation = "$publicCity, $publicRegion"
+#>
+	$publicInfo = Invoke-RestMethod http://ipinfo.io/json
 
-$geoLat = $geoLoc | Select-Object -ExpandProperty Latitude
-$geoLong = $geoLoc | Select-Object -ExpandProperty Longitude
+	$publicIP = $publicInfo | Select-Object -ExpandProperty ip
+	$geoLoc = Invoke-RestMethod -Method Get -Uri http://freegeoip.net/json/$publicIP
+	$publicCity = $publicInfo | Select -ExpandProperty city
+	$publicRegion = $publicInfo | Select -ExpandProperty region
 
-}
+	$cityLocation = "$publicCity, $publicRegion"
 
-
-$fullGeo = "$geoLat,$geoLong"
-
-
-$dsData = Invoke-RestMethod "https://api.darksky.net/forecast/$darkskyAPI/35.6733387,-77.9053182"
-
-$dsCurrTime = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.currently.time))
-
-$dsCurrTemp = $dsData.currently.temperature
-
-$dsCurrSummary = $dsData.currently.summary
-
-$dsMinSummary = $dsData.minutely.summary
-
-$dsHourSummary = $dsData.hourly.summary
-
-$dsWeeklySummary = $dsdata.daily.data | Select-Object -Property Summary,@{N="High";E={$_.temperatureMax.ToString() + " (F)"}},@{N="Low";E={$_.temperatureMin.ToString() + " (F)"}},@{N="Day";E={[timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($_.Time)) | Get-Date -Uformat %A}} | Format-Table -AutoSize -GroupBy Time -Property Day,Summary,High,Low
-
-Write-Output "`nCurrent Conditions for $cityLocation `n --------------------- `n Last Updated: $dsCurrTime `n Current Temperature (F): $dsCurrTemp `n Current Conditions: $dsCurrSummary `n `n In the next hour: $dsMinSummary `n `n For the next 48 hours: $dsHourSummary "
-
-$dsWeeklySummary
+	$geoLat = $geoLoc | Select-Object -ExpandProperty Latitude
+	$geoLong = $geoLoc | Select-Object -ExpandProperty Longitude
 
 }
 
-
-function Get-Weather {
-
-param(
-
-[string]$zipcode,
-[string]$datatype = "forecast"
-
-)
-
-$darkskyAPI = "de7162e828111d8ad6b719c524be5dd3"
-$googlegeocodeAPI = "AIzaSyDHDRQkGUV4ckTrnGhQPFnrTDGKT_9UM_A"
+$fullGeo = "$geoLat,$geoLong" #Combine the latitude and longitude into one string.
 
 
-if (!$darkskyAPI -or !$googlegeocodeAPI)
-{
-
-Write-Error "An API key is missing."
-Break
-}
-
-if ($zipcode)
-{
-
-
-$googleData = Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$zipcode&key=$googlegeocodeAPI"
-
-$geoLat = $googleData.results.geometry.location.lat;
-$geoLong = $googleData.results.geometry.location.lng
-
-$cityLocation = $googleData.results.formatted_address
-
-}
-else
-{
-$publicInfo = Invoke-RestMethod http://ipinfo.io/json
-
-$publicIP = $publicInfo | Select-Object -ExpandProperty ip
-$geoLoc = Invoke-RestMethod -Method Get -Uri http://freegeoip.net/json/$publicIP
-$publicCity = Invoke-RestMethod http://ipinfo.io/json | Select -ExpandProperty city
-$publicRegion = Invoke-RestMethod http://ipinfo.io/json | Select -ExpandProperty region
-
-$cityLocation = "$publicCity, $publicRegion"
-
-$geoLat = $geoLoc | Select-Object -ExpandProperty Latitude
-$geoLong = $geoLoc | Select-Object -ExpandProperty Longitude
-
-}
-
-
-$fullGeo = "$geoLat,$geoLong"
-
-
-$dsData = Invoke-RestMethod "https://api.darksky.net/forecast/$darkskyAPI/35.6733387,-77.9053182"
+$dsData = Invoke-RestMethod "https://api.darksky.net/forecast/$darkskyAPI/$fullgeo"
 
 $dsCurrTime = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.currently.time))
 
