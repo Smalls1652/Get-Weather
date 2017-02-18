@@ -14,9 +14,9 @@ I am not fully done making this script and it's not the prettiest, but it is wor
 
 ##Installation
 1. Install the Get-Weather folder into one of these three folders:
-* C:\Users\<YOUR USERNAME>\Documents\WindowsPowerShell\Modules
-* C:\Program Files\WindowsPowerShell\Modules
-* C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+..* C:\Users\<YOUR USERNAME>\Documents\WindowsPowerShell\Modules
+..* C:\Program Files\WindowsPowerShell\Modules
+..* C:\Windows\system32\WindowsPowerShell\v1.0\Modules
 
 2. Open up the Get-Weather.psm1 file with a text editor and edit these two lines with the API keys from DarkSky and Google GeoCoding:
 ```powershell
