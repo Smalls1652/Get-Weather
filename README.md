@@ -2,99 +2,82 @@
 
 This script is a silly, but useful script to gather current weather conditions and a 7-Day forecast. I've seen a lot of similar scripts, but I always saw OpenWeatherMap as the data source.This script is tailored to DarkSky (Formely Forecast.io), which is my preferred weather data provider.An API key will be required for DarkSky and Google's GeoCoding for pinpointing latitude and longitude. DarkSky allows up to 1000 free API calls per day.
 
-I am a weather geek and an IT employee. I work in PowerShell almost daily because it thoroughly helps my workflow, so this script will make seeing the current weather conditions much easier. Even though I can see them on my watch... And phone.
+I am a weather geek and an IT employee. I work in PowerShell almost daily because it thoroughly helps my workflow, so this script will make seeing the current weather conditions much easier. Even though I can see them on my watch... And phone... And tablet... And if I just open up a web browser. Still, this is a simple and easy way to see current weather data from something I am constantly in every day.
 
 I am not fully done making this script and it's not the prettiest, but it is working perfectly right now.
 
-##Requirements
+## Requirements
 * PowerShell 3.0 and higher.
 * A DarkSky API Key (https://darksky.net/dev/)
 * Google GeoCoding API Key (https://console.developers.google.com)
 
 
-##Installation
-1. Install the Get-Weather folder into one of these three folders:
+## Installation
+1. Install the Get-Weather folder into one of these folders:
+  If on Windows:
   * C:\Users\YOUR USERNAME\Documents\WindowsPowerShell\Modules
   * C:\Program Files\WindowsPowerShell\Modules
   * C:\Windows\system32\WindowsPowerShell\v1.0\Modules
 
-2. Open up the Get-Weather.psm1 file with a text editor and edit these two lines with the API keys from DarkSky and Google GeoCoding (Replace the INSERT KEY HERE with your key):
-  ```csv
-"API","Key"
-"DarkSky","INSERT KEY HERE"
-"GoogleGeocoding","INSERT KEY HERE"
-```
+  If on macOS:
+  *~/.local/share/powershell/Modules
 
-3. Save the file.
 
-4. In an admin Powershell console, run this command to allow unsigned scripts to run and make sure it's set to all:
+2. [Windows only] In an admin Powershell console, run this command to allow unsigned scripts to run and make sure it's set to all:
   ```powershell
 Set-ExecutionPolicy Bypass
 ```
 
-5. The script is now able to run.
+3. The script is now able to run.
 
-##Usage
+## Post-Install Setup
 
-Once the script has been loaded into memory there are two ways to get weather data:
+Once you run Get-Weather once, it will ask you to supply the API keys from Dark Sky and Google Maps Geocoding.
 
-``` powershell
-Get-Weather
-and
-Get-Weather -ZipCode <ZIPCODE>
-```
+## Module Help File
 
-Running the command with no zipcode will load your location data from your public IP, so if you're behind a VPN... This will not pull your right location.
-
-Examples:
-``` powershell
-Get-Weather
-
-Current Conditions for Birmingham, AL
- --------------------- 
- Last Updated: 02/16/2017 19:55:48 
- Current Temperature (F): 40.96 
- Current Conditions: Clear 
- 
- In the next hour: Clear for the hour. 
- 
- For the next 48 hours: Partly cloudy starting tonight, continuing until tomorrow morning. 
-
-Day       summary                                High      Low      
----       -------                                ----      ---      
-Thursday  Partly cloudy overnight.               51.07 (F) 31.65 (F)
-Friday    Mostly cloudy in the morning.          66.29 (F) 32.97 (F)
-Saturday  Mostly cloudy throughout the day.      74.5 (F)  44.05 (F)
-Sunday    Mostly cloudy in the morning.          76.42 (F) 51.35 (F)
-Monday    Mostly cloudy starting in the evening. 70.42 (F) 48.6 (F) 
-Tuesday   Mostly cloudy throughout the day.      67.12 (F) 43.64 (F)
-Wednesday Mostly cloudy throughout the day.      72.1 (F)  45.92 (F)
-Thursday  Light rain throughout the day.         70.39 (F) 55.07 (F)
-```
 ```powershell
-Get-Weather -zipcode 36602
-
-Current Conditions for Mobile, AL 36602, USA 
- --------------------- 
- Last Updated: 02/16/2017 19:57:49 
- Current Temperature (F): 40.76 
- Current Conditions: Clear 
- 
- In the next hour: Clear for the hour. 
- 
- For the next 48 hours: Partly cloudy starting tonight, continuing until tomorrow morning. 
-
-Day       summary                                High      Low      
----       -------                                ----      ---      
-Thursday  Partly cloudy overnight.               51.07 (F) 31.65 (F)
-Friday    Mostly cloudy in the morning.          66.29 (F) 32.97 (F)
-Saturday  Mostly cloudy throughout the day.      74.5 (F)  44.05 (F)
-Sunday    Mostly cloudy in the morning.          76.42 (F) 51.35 (F)
-Monday    Mostly cloudy starting in the evening. 70.42 (F) 48.6 (F) 
-Tuesday   Mostly cloudy throughout the day.      67.13 (F) 43.64 (F)
-Wednesday Mostly cloudy throughout the day.      72.1 (F)  45.92 (F)
-Thursday  Light rain throughout the day.         70.4 (F)  55.07 (F)
+<#
+	.SYNOPSIS
+	Gets weather data from DarkSky and outputs it into the shell.
+	
+	.DESCRIPTION
+	Gets weather data from DarkSky and outputs it into the shell. This data includes current conditions and a 7-day forecast for the current area or a specified zipcode.
+	
+	.PARAMETER ZipCode
+	Manual zipcode to gather data for.
+	
+	.PARAMETER Forecast
+	Show the next 8 day forecast.
+	
+	.PARAMETER Hourly
+  Show the hourly forecast for the rest of the day.
+  
+  .PARAMETER Config
+  Rerun the API Key config setup.
+	
+	.PARAMETER Force
+	Force an update to the local DB of the location. Warning: This counts as an API call to Dark Sky.
+	
+	.EXAMPLE
+	# Show weather for the current location.
+	Get-Weather
+	
+	.EXAMPLE
+	# Get weather for a specific location through a zipcode and get the 8 day forecast.
+  Get-Weather -ZipCode 36602 -Forecast
+  
+  .EXAMPLE
+  # Force a refresh of the local DB for a zipcode and get the hourly forecast.
+	Get-Weather -ZipCode 36602 -Hourly -Force
+	#>
+	
 ```
-##Planned Updates
 
-Hopefully I can find some time to prevent weather data from being constantly downloaded every time the command is ran. I'm hoping to continuously update this script until it fits all of my personal needs, so expect plenty of new additions and changes (Especially to the structure of the code).
+## Notes
+
+DarkSky has a 1,000 free API calls per day. After that, it costs $1 per 10,000 API calls. My advice is to not go wild with multiple refreshes of weather data. At this moment in time, the module will only refresh the local DB if it is one hour old or if you force a refresh.
+
+## Planned Updates
+
+As of November 4th, 2017, the module has been heavily updated to function in a more cohesive and modular way. Further improvements to the module will consist of more depth/options in the data that's presented, cleaning the structure of the code, improving the local DB refresh, and building error handling.
