@@ -27,8 +27,10 @@ param(
 
 )
 
-$darkskyAPI = "" #Your Dark Sky API Key goes here
-$googlegeocodeAPI = "" #Your Google GeoCoding API key goes here
+$apiKeys = Import-Csv -Path "$PSScriptRoot/APIKeys.csv"
+
+$darkskyAPI = ($apiKeys | Where-Object -Property "API" -eq "DarkSky").Key
+$googlegeocodeAPI = ($apiKeys | Where-Object -Property "API" -eq "GoogleGeocoding").Key
 
 
 if (!$darkskyAPI -or !$googlegeocodeAPI)
@@ -71,8 +73,8 @@ Public IP reverse lookup is used here to pinpoint the zipcode down to it's latit
 
 	$publicIP = $publicInfo | Select-Object -ExpandProperty ip
 	$geoLoc = Invoke-RestMethod -Method Get -Uri http://freegeoip.net/json/$publicIP
-	$publicCity = $publicInfo | Select -ExpandProperty city
-	$publicRegion = $publicInfo | Select -ExpandProperty region
+	$publicCity = $publicInfo | Select-Object -ExpandProperty city
+	$publicRegion = $publicInfo | Select-Object -ExpandProperty region
 
 	$cityLocation = "$publicCity, $publicRegion"
 
