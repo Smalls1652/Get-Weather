@@ -37,7 +37,7 @@ Once you run Get-Weather once, it will ask you to supply the API keys from Dark 
 ## Module Help File
 
 ```powershell
-<#
+    <#
 	.SYNOPSIS
 	Gets weather data from DarkSky and outputs it into the shell.
 	
@@ -46,15 +46,21 @@ Once you run Get-Weather once, it will ask you to supply the API keys from Dark 
 	
 	.PARAMETER ZipCode
 	Manual zipcode to gather data for.
+
+	.PARAMETER Address
+	Manual address to gather data for.
 	
 	.PARAMETER Forecast
 	Show the next 8 day forecast.
 	
 	.PARAMETER Hourly
-  Show the hourly forecast for the rest of the day.
+  	Show the hourly forecast for the rest of the day.
   
-  .PARAMETER Config
-  Rerun the API Key config setup.
+  	.PARAMETER Config
+  	Rerun the API Key config setup.
+
+	.PARAMETER ClearDB
+	Clear all DB files.
 	
 	.PARAMETER Force
 	Force an update to the local DB of the location. Warning: This counts as an API call to Dark Sky.
@@ -65,10 +71,10 @@ Once you run Get-Weather once, it will ask you to supply the API keys from Dark 
 	
 	.EXAMPLE
 	# Get weather for a specific location through a zipcode and get the 8 day forecast.
-  Get-Weather -ZipCode 36602 -Forecast
+  	Get-Weather -ZipCode 36602 -Forecast
   
-  .EXAMPLE
-  # Force a refresh of the local DB for a zipcode and get the hourly forecast.
+  	.EXAMPLE
+  	# Force a refresh of the local DB for a zipcode and get the hourly forecast.
 	Get-Weather -ZipCode 36602 -Hourly -Force
 	#>
 	
