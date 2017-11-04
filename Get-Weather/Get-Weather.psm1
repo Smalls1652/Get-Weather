@@ -146,11 +146,11 @@
 	
                 "Summary"             = $day.Summary;
 	
-                "High"                = $day.temperatureMax.ToString() + " (F)";
+                "High (F)"                = ([math]::Round($day.temperatureMax)).ToString() + [char]0x00b0;
 	
-                "Low"                 = $day.temperatureMin.ToString() + " (F)";
+                "Low (F)"                 = ([math]::Round($day.temperatureMin)).ToString() + [char]0x00b0;
 	
-                "Precipitation Prob." = $day.precipProbability.ToString() + "%";
+                "Precip Prob." = $day.precipProbability.ToString() + "%";
 	
                 "Sunrise"             = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($day.sunriseTime)) | Get-Date -Format "hh:mm tt";
 	
@@ -159,19 +159,21 @@
 	
             [pscustomobject]$DayForecast
         }
-        [pscustomobject]$ForecastOutput | Select-Object -Property "Day", "Summary", "High", "Low", "Sunrise", "Sunset", "Precipitation Prob." | Format-Table -AutoSize
+        [pscustomobject]$ForecastOutput | Select-Object -Property "Day", "Summary", "High (F)", "Low (F)", "Sunrise", "Sunset", "Precip Prob." | Format-Table -AutoSize
     }
     elseif (($Hourly)) {
         $HourlyOutput = foreach ($hour in $dsData.hourly.data) {
             $HourlyForecast = @{
-					
+				
+				"Day" = If (([timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($hour.Time)) | Get-Date) -eq (Get-Date -Hour 0 -Minute 0 -Second 0 -Millisecond 0)) { "Today" } else { ([timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($hour.Time)) | Get-Date -Format "dddd").ToString() };
+
                 "Hour"                = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($hour.Time)) | Get-Date -Format "hh:mm tt";
 					
                 "Summary"             = $hour.Summary;
 					
-                "Temperature"         = $hour.temperature.ToString() + " (F)";
+                "Temp (F)"         = ([math]::Round($hour.temperature)).ToString() + [char]0x00b0;
 	
-                "Precipitation Prob." = $hour.precipProbability.ToString() + "%";
+                "Precip Prob." = $hour.precipProbability.ToString() + "%";
 	
                 "Pressure"            = $hour.pressure.ToString() + "mb";
 	
@@ -181,7 +183,7 @@
 					
             [pscustomobject]$HourlyForecast
         }
-        [pscustomobject]$HourlyOutput | Select-Object -Property "Hour", "Summary", "Temperature", "Pressure", "Wind Speed", "Precipitation Prob." | Format-Table -AutoSize
+        [pscustomobject]$HourlyOutput | Select-Object -Property "Day","Hour", "Summary", "Temp (F)", "Pressure", "Wind Speed", "Precip Prob." | Format-Table -AutoSize
     }
     else {
         $todaySunrise = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.daily.data[0].sunriseTime)) | Get-Date -Format "hh:mm tt";
@@ -196,7 +198,7 @@
 	
             "Last Updated"        = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.currently.time));
 	
-            "Current Temperature" = ($dsData.currently.temperature).ToString() + " (F)";
+            "Current Temp (F)" = ([math]::Round($dsData.currently.temperature)).ToString() + [char]0x00b0;
 	
             "Current Conditions"  = $dsData.currently.summary;
 	
@@ -212,7 +214,7 @@
 	
             "Next 48 Hours"       = $dsData.hourly.summary
         }
-        return [pscustomobject]$currentSummary | Select-Object -Property "Location", "Last Updated", "Current Temperature", "Current Conditions", "Pressure", "Wind Speed", "Sunrise", "Sunset", "Next Hour", "Next 48 Hours"
+        return [pscustomobject]$currentSummary | Select-Object -Property "Location", "Last Updated", "Current Temp (F)", "Current Conditions", "Pressure", "Wind Speed", "Sunrise", "Sunset", "Next Hour", "Next 48 Hours"
     }
 	
 	
