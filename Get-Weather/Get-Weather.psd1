@@ -1,6 +1,6 @@
 ﻿@{
 ModuleToProcess = 'Get-Weather.psm1'
-ModuleVersion = '1.1'
+ModuleVersion = '1.2'
 Author = 'Smalls'
 Guid="b4e30a40-16e4-4d42-909d-13d1463affad"
 CompanyName = 'Smalls'
