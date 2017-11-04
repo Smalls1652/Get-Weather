@@ -1,107 +1,224 @@
 ﻿function Get-Weather {
-
+	
 <#
-.SYNOPSIS
-Gets weather data from DarkSky and outputs it into the shell.
-
-.DESCRIPTION
-Gets weather data from DarkSky and outputs it into the shell. This data includes current conditions and a 7-day forecast for the current area or a specified zipcode.
-
-.PARAMETER ZipCode
-Manual zipcode to gather data for.
-
-.EXAMPLE
-# Show weather for the current location.
-Get-Weather
-
-.EXAMPLE
-# Get weather for a specific location through a zipcode.
-Get-Weather -ZipCode 36602
-
-#>
-
-[cmdletbinding()]
-param(
-
-[string]$ZipCode
-
-)
-
-$apiKeys = Import-Csv -Path "$PSScriptRoot/APIKeys.csv"
-
-$darkskyAPI = ($apiKeys | Where-Object -Property "API" -eq "DarkSky").Key
-$googlegeocodeAPI = ($apiKeys | Where-Object -Property "API" -eq "GoogleGeocoding").Key
-
-
-if (!$darkskyAPI -or !$googlegeocodeAPI)
-{
-
-	Write-Error "An API key is missing."
-	Break
-}
-
-<#
-
-DarkSky uses latitude and longitude to get weather data, since it's a "hyperlocal" weather service. To make this easier to the user, the script must determine the latitude and longitude of their location.
-
-#>
-if ($ZipCode) #If the zipcode parameter has been supplied
-{
-
-<#
-
-Google GeoCoding is used here to pinpoint the zipcode down to it's latitude and longitude.
-
-#>
-
-	$googleData = Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$ZipCode&key=$googlegeocodeAPI"
-
-	$geoLat = $googleData.results.geometry.location.lat;
-	$geoLong = $googleData.results.geometry.location.lng
-
-	$cityLocation = $googleData.results.formatted_address
-
-}
-else #If the zipcode parameter was not supplied.
-{
-<#
-
-Public IP reverse lookup is used here to pinpoint the zipcode down to it's latitude and longitude.
-
-#>
+	.SYNOPSIS
+	Gets weather data from DarkSky and outputs it into the shell.
+	
+	.DESCRIPTION
+	Gets weather data from DarkSky and outputs it into the shell. This data includes current conditions and a 7-day forecast for the current area or a specified zipcode.
+	
+	.PARAMETER ZipCode
+	Manual zipcode to gather data for.
+	
+	.PARAMETER Forecast
+	Show the next 8 day forecast.
+	
+	.PARAMETER Hourly
+  Show the hourly forecast for the rest of the day.
+  
+  .PARAMETER Config
+  Rerun the API Key config setup.
+	
+	.PARAMETER Force
+	Force an update to the local DB of the location. Warning: This counts as an API call to Dark Sky.
+	
+	.EXAMPLE
+	# Show weather for the current location.
+	Get-Weather
+	
+	.EXAMPLE
+	# Get weather for a specific location through a zipcode and get the 8 day forecast.
+  Get-Weather -ZipCode 36602 -Forecast
+  
+  .EXAMPLE
+  # Force a refresh of the local DB for a zipcode and get the hourly forecast.
+	Get-Weather -ZipCode 36602 -Hourly -Force
+	#>
+	
+		[cmdletbinding()]
+		param(
+	
+			[string]$ZipCode,
+			[switch]$Forecast,
+			[switch]$Hourly,
+			[switch]$Config,
+			[switch]$Force
+	
+		)
+	
+		function APIConfig {
+			param(
+				
+				[string]$DarkSky,
+				[string]$Google
+			)
+	
+			If (!($DarkSky))
+			{
+				$DarkSky = Read-Host -Prompt "Please enter the Dark Sky API Key"
+			}
+			If (!($Google))
+			{
+				$Google = Read-Host -Prompt "Please enter the Google Maps Geocode API Key"
+			}
+			$APIFile = '"API","Key"
+	"DarkSky","' + $DarkSky + '"
+	"GoogleGeocoding","' + $Google + '"'
+	
+			$APIFile | Out-File -FilePath "$PSScriptRoot/APIKeys.csv" -Force
+		}
+	
+		if (!(Get-ChildItem -Path "$PSScriptRoot/APIKeys.csv" -ErrorAction SilentlyContinue) -or ($Config))
+		{
+			APIConfig
+		}
+	
+		$apiKeys = Import-Csv -Path "$PSScriptRoot/APIKeys.csv"
+	
+		$darkskyAPI = ($apiKeys | Where-Object -Property "API" -eq "DarkSky").Key
+		$googlegeocodeAPI = ($apiKeys | Where-Object -Property "API" -eq "GoogleGeocoding").Key
+	
+		<#
+	
+	DarkSky uses latitude and longitude to get weather data, since it's a "hyperlocal" weather service. To make this easier to the user, the script must determine the latitude and longitude of their location.
+	
+	#>
+		if ($ZipCode) #If the zipcode parameter has been supplied 
+		{
+	
+		<#
+	
+	Google GeoCoding is used here to pinpoint the zipcode down to it's latitude and longitude.
+	
+	#>
+	
+		$googleData = Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$ZipCode&key=$googlegeocodeAPI"
+	
+		$geoLat = $googleData.results.geometry.location.lat;
+		$geoLong = $googleData.results.geometry.location.lng
+	
+		$cityLocation = $googleData.results.formatted_address
+	
+	}
+	else #If the zipcode parameter was not supplied. 
+	{
+	<#
+	
+	Public IP reverse lookup is used here to pinpoint the zipcode down to it's latitude and longitude.
+	
+	#>
 	$publicInfo = Invoke-RestMethod http://ipinfo.io/json
-
+	
 	$publicIP = $publicInfo | Select-Object -ExpandProperty ip
 	$geoLoc = Invoke-RestMethod -Method Get -Uri http://freegeoip.net/json/$publicIP
 	$publicCity = $publicInfo | Select-Object -ExpandProperty city
 	$publicRegion = $publicInfo | Select-Object -ExpandProperty region
-
+	
 	$cityLocation = "$publicCity, $publicRegion"
-
+	
 	$geoLat = $geoLoc | Select-Object -ExpandProperty Latitude
 	$geoLong = $geoLoc | Select-Object -ExpandProperty Longitude
-
-}
-
-$fullGeo = "$geoLat,$geoLong" #Combine the latitude and longitude into one string.
-
-
-$dsData = Invoke-RestMethod "https://api.darksky.net/forecast/$darkskyAPI/$fullgeo"
-
-$dsCurrTime = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.currently.time))
-
-$dsCurrTemp = $dsData.currently.temperature
-
-$dsCurrSummary = $dsData.currently.summary
-
-$dsMinSummary = $dsData.minutely.summary
-
-$dsHourSummary = $dsData.hourly.summary
-
-$dsWeeklySummary = $dsdata.daily.data | Select-Object -Property Summary,@{N="High";E={$_.temperatureMax.ToString() + " (F)"}},@{N="Low";E={$_.temperatureMin.ToString() + " (F)"}},@{N="Day";E={[timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($_.Time)) | Get-Date -Uformat %A}} | Format-Table -AutoSize -GroupBy Time -Property Day,Summary,High,Low
-
-Write-Output "`nCurrent Conditions for $cityLocation `n --------------------- `n Last Updated: $dsCurrTime `n Current Temperature (F): $dsCurrTemp `n Current Conditions: $dsCurrSummary `n `n In the next hour: $dsMinSummary `n `n For the next 48 hours: $dsHourSummary "
-
-$dsWeeklySummary
-
-}
+	
+	}
+	
+	$fullGeo = "$geoLat,$geoLong" #Combine the latitude and longitude into one string.
+	$fullFile = $PSScriptRoot + "/$fullgeo.xml"
+	
+	if (!(Get-ChildItem $fullFile -ErrorAction SilentlyContinue) -or ((Get-Date) -ge ((Get-ChildItem $fullFile -ErrorAction SilentlyContinue).LastWriteTime.AddHours(1)))  -or ($Force)) {
+	
+		$dsData = Invoke-RestMethod "https://api.darksky.net/forecast/$darkskyAPI/$fullgeo"
+	
+		Export-Clixml -Path $fullFile -InputObject $dsData
+	}
+	else {
+		$dsData = Import-Clixml -Path $fullFile
+	}
+	
+		If ($Forecast) {
+			$ForecastOutput = foreach ($day in $dsData.daily.data)
+			{
+				If (([timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($day.Time)) | Get-Date) -eq (Get-Date -Hour 0 -Minute 0 -Second 0 -Millisecond 0)) { 
+					$weektoday = "Today" 
+				} 
+				else { 
+					$weektoday = ([timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($day.Time)) | Get-Date -Format "dddd").ToString()
+				}
+	
+				$DayForecast = @{
+	
+					"Day"     = $weektoday;
+	
+					"Summary" = $day.Summary;
+	
+					"High"    = $day.temperatureMax.ToString() + " (F)";
+	
+					"Low"     = $day.temperatureMin.ToString() + " (F)";
+	
+					"Precipitation Prob." = $day.precipProbability.ToString() + "%";
+	
+					"Sunrise" = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($day.sunriseTime)) | Get-Date -Format "hh:mm tt";
+	
+					"Sunset" = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($day.sunsetTime)) | Get-Date -Format "hh:mm tt";
+				}
+	
+				[pscustomobject]$DayForecast
+			}
+			[pscustomobject]$ForecastOutput | Select-Object -Property "Day","Summary","High","Low","Sunrise","Sunset","Precipitation Prob." | Format-Table -AutoSize
+		}
+		elseif (($Hourly))
+		{
+			$HourlyOutput = foreach ($hour in $dsData.hourly.data) {
+				$HourlyForecast = @{
+					
+					"Hour" = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($hour.Time)) | Get-Date -Format "hh:mm tt";
+					
+					"Summary" = $hour.Summary;
+					
+					"Temperature"    = $hour.temperature.ToString() + " (F)";
+	
+					"Precipitation Prob." = $hour.precipProbability.ToString() + "%";
+	
+					"Pressure" = $hour.pressure.ToString() + "mb";
+	
+					"Wind Speed" = ([math]::Round($hour.windSpeed)).ToString() + " MPH"
+	
+				}
+					
+				[pscustomobject]$HourlyForecast
+			}
+			[pscustomobject]$HourlyOutput | Select-Object -Property "Hour","Summary","Temperature","Pressure","Wind Speed","Precipitation Prob." | Format-Table -AutoSize
+		}
+		else {
+			$todaySunrise = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.daily.data[0].sunriseTime)) | Get-Date -Format "hh:mm tt";
+			$todaySunset = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.daily.data[0].sunsetTime)) | Get-Date -Format "hh:mm tt";
+	
+			$sunriseOccured = If ((Get-Date) -gt ($todaySunrise)) { " (Already Occured)" }
+			$sunsetOccured = If ((Get-Date) -gt ($todaySunset)) { " (Already Occured)" }
+	
+			$currentSummary = @{
+	
+				"Location"            = $cityLocation;
+	
+				"Last Updated"        = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.currently.time));
+	
+				"Current Temperature" = ($dsData.currently.temperature).ToString() + " (F)";
+	
+				"Current Conditions"  = $dsData.currently.summary;
+	
+				"Pressure" = $dsData.currently.pressure.ToString() + " mb"; 
+	
+				"Wind Speed" = ([math]::Round($dsData.currently.windSpeed)).ToString() + " MPH";
+	
+				"Sunrise" = $todaySunrise + $sunriseOccured;
+	
+				"Sunset" = $todaySunset + $sunsetOccured;
+	
+				"Next Hour"           = $dsData.minutely.summary;
+	
+				"Next 48 Hours"       = $dsData.hourly.summary
+			}
+			return [pscustomobject]$currentSummary | Select-Object -Property "Location", "Last Updated", "Current Temperature", "Current Conditions", "Pressure", "Wind Speed", "Sunrise", "Sunset", "Next Hour", "Next 48 Hours"
+		}
+	
+	
+	}
