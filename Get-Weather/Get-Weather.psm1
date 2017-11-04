@@ -9,6 +9,9 @@
 	
 	.PARAMETER ZipCode
 	Manual zipcode to gather data for.
+
+	.PARAMETER Address
+	Manual address to gather data for.
 	
 	.PARAMETER Forecast
 	Show the next 8 day forecast.
