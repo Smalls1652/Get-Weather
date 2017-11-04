@@ -45,7 +45,8 @@
         [string]$Address,
         [switch]$Forecast,
         [switch]$Hourly,
-        [switch]$Config,
+		[switch]$Config,
+		[switch]$ClearDB,
         [switch]$Force
 	
     )
@@ -87,23 +88,40 @@
     if ($ZipCode) {
 	
 	
-        $googleData = Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$ZipCode&key=$googlegeocodeAPI"
+        $googleData = (Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$ZipCode&key=$googlegeocodeAPI").results
 	
-        $geoLat = $googleData.results.geometry.location.lat
-        $geoLong = $googleData.results.geometry.location.lng
+        $geoLat = $googleData.geometry.location.lat
+        $geoLong = $googleData.geometry.location.lng
 	
-        $cityLocation = $googleData.results.formatted_address
+        $cityLocation = $googleData.formatted_address
 	
     }
     elseif ($Address) {
 
 
-        $googleData = Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$Address&key=$googlegeocodeAPI"
+        $googleData = (Invoke-RestMethod "https://maps.googleapis.com/maps/api/geocode/json?address=$Address&key=$googlegeocodeAPI").results
+		if ($googleData.Length -gt 1)
+		{
+			Write-Warning "More than one result returned.`n"
+			$i = 0
+			foreach ($option in $googleData)
+			{
+				$i++
+				$optionName = $option.formatted_address
+				Write-Host  "$i. $optionName"
+			}
+			
+			while ((($chosenOption = Read-Host -Prompt "Select an option") -gt $i) -or !($chosenOption))
+			{
+				Write-Warning "Out of range. Please select and option within the range."
+			}
 
-        $geoLat = $googleData.results.geometry.location.lat
-        $geoLong = $googleData.results.geometry.location.lng
+			$googleData = $googleData[$chosenOption - 1]
+		}
+        $geoLat = $googleData.geometry.location.lat
+        $geoLong = $googleData.geometry.location.lng
 
-        $cityLocation = $googleData.results.formatted_address
+        $cityLocation = $googleData.formatted_address
 
     }
     else {
@@ -184,7 +202,13 @@
             [pscustomobject]$HourlyForecast
         }
         [pscustomobject]$HourlyOutput | Select-Object -Property "Day","Hour", "Summary", "Temp (F)", "Pressure", "Wind Speed", "Precip Prob." | Format-Table -AutoSize
-    }
+	}
+	elseif ($ClearDB) {
+		foreach ($file in (Get-ChildItem -Path $PSScriptRoot -Filter "*.xml"))
+		{
+			$file.Delete()
+		}
+	}
     else {
         $todaySunrise = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.daily.data[0].sunriseTime)) | Get-Date -Format "hh:mm tt";
         $todaySunset = [timezone]::CurrentTimeZone.ToLocalTime(([datetime]'1/1/1970').AddSeconds($dsData.daily.data[0].sunsetTime)) | Get-Date -Format "hh:mm tt";
