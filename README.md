@@ -20,7 +20,7 @@ I am not fully done making this script and it's not the prettiest, but it is wor
   * C:\Windows\system32\WindowsPowerShell\v1.0\Modules
 
   If on macOS:
-  *~/.local/share/powershell/Modules
+  * ~/.local/share/powershell/Modules
 
 
 2. [Windows only] In an admin Powershell console, run this command to allow unsigned scripts to run and make sure it's set to all:
