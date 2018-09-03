@@ -167,10 +167,10 @@ function Get-Weather {
 
         $forecastData = runAPICall -apiUri $apiUri
 
-        $percentChance = getRainChance -iconurl $period.icon
-
         foreach ($period in $forecastData.properties.periods) {
             $forecastPeriod = New-Object -TypeName pscustomobject
+
+            $percentChance = getRainChance -iconurl $period.icon
 
             Add-Member -InputObject $forecastPeriod -MemberType NoteProperty -Name "Day" -Value $period.name
             Add-Member -InputObject $forecastPeriod -MemberType NoteProperty -Name "Temperature (F)" -Value $period.temperature
@@ -192,8 +192,6 @@ function Get-Weather {
 
         foreach ($period in ($hourlyData.properties.periods | Select-Object -First 12)) {
             $hourlyPeriod = New-Object -TypeName pscustomobject
-
-            $regexIcons = ($period.icon | Select-String 'https:\/\/api\.weather\.gov\/icons\/.*?\/(?:day|night)\/(?:(?<condition1>.*)\/(?<condition2>.*?)|(?<condition>.*))(?=\?size=.*)')
 
             $percentChance = getRainChance -iconurl $period.icon
 
