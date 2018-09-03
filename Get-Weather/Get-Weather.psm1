@@ -37,6 +37,7 @@ function Get-Weather {
         [switch]$Hourly
     )
 
+    #Grabs JSON data from OpenStreetMap to get location data.
     function osmLocation {
         param (
             [string]$zip
@@ -47,6 +48,7 @@ function Get-Weather {
         return $apiCall
     }
 
+    #Grabs data from the National Weather Service relative to the Lat/Lon of the zipcode provided.
     function nwsPointData {
         param(
             [string]$Latitude,
@@ -58,6 +60,7 @@ function Get-Weather {
         return $apiCall
     }
 
+    #This is a general API caller. Returns the JSON.
     function runAPICall {
         param(
             [string]$apiUri
@@ -68,6 +71,7 @@ function Get-Weather {
         return $apiCall
     }
 
+    #Grabs the current conditions from the first observation station.
     function getCurrentConditions {
         param (
             [string]$apiUri
@@ -79,6 +83,17 @@ function Get-Weather {
         foreach ($observation in $observations.features) {
             $currentConditions = New-Object -TypeName pscustomobject
 
+            <#
+            Running a check for if the temperature property has a qc:Z value for quality control.
+            
+            Unfortunately the NWS API does not update current conditions as quickly as they should be and we have to run through each update period for a qc:V value. 
+            If we don't do this, then most values will return null.
+
+            The biggest issue we can get from this, is the fact that current conditions are far behind on time.
+            Even if ignore the quality control values, the current conditions are unreliable and outdated.
+            Hopefully NWS will fix this eventually.
+
+            #>
             if (!($observation.properties.temperature.qualityControl -eq "qc:Z")) {
     
                 $percentChange = New-Object System.Globalization.CultureInfo -ArgumentList "en-us", $false
@@ -105,6 +120,7 @@ function Get-Weather {
         }
     }
 
+    #Grabs the forecast data from the NWS API.
     function getForecast {
         param (
             [string]$apiUri
@@ -155,6 +171,7 @@ function Get-Weather {
         }
     }
 
+    #Grabs the hourly data from the NWS API.
     function getHourly {
         param (
             [string]$apiUri
@@ -205,19 +222,35 @@ function Get-Weather {
         }
     }
 
-    $osmData = osmLocation -zip $ZipCode
+    <#
+    
+    Most of the script is split into multiple functions within this cmdlet. 
+    It allows a modularized approach to running each command.
+    
+    #>
+    $osmData = osmLocation -zip $ZipCode #Get location data from the specified location.
 
-    $nwsPoint = nwsPointData -Latitude $osmData.lat -Longitude $osmData.lon
+    $nwsPoint = nwsPointData -Latitude $osmData.lat -Longitude $osmData.lon #Get the NWS point data from the Lat/Lon retrieved in the $osmData variable.
 
+    <#
+    
+    Even though we're grabbing one portion of the data from the user provided switch, we're grabbing all of the API urls returned in the point data.
+    This doesn't extend the time it takes for the script to run.
+
+    #>
     $nwsAPIs = New-Object -TypeName pscustomobject
     Add-Member -InputObject $nwsAPIs -MemberType NoteProperty -Name "Stations" -Value $nwsPoint.properties.observationStations
     Add-Member -InputObject $nwsAPIs -MemberType NoteProperty -Name "Forecast" -Value $nwsPoint.properties.forecast
     Add-Member -InputObject $nwsAPIs -MemberType NoteProperty -Name "Hourly" -Value $nwsPoint.properties.forecastHourly
     Add-Member -InputObject $nwsAPIs -MemberType NoteProperty -Name "Local Office" -Value $nwsPoint.properties.forecastOffice
 
-    #$hourlyData = runAPICall -apiUri $nwsAPIs.Hourly
-    #$officeData = runAPICall -apiUri $nwsAPIs.'Local Office'
-
+    <#
+    
+    Running through the switches provided by the user.
+    Only one switch can be ran at any given time.
+    If more than one switch is provided, then it runs the first provided switch.
+    
+    #>
     switch ($PSBoundParameters.GetEnumerator() | Where-Object -Property "Value" -eq $true | Select-Object -ExpandProperty "Key") {
         default {
             getCurrentConditions -apiUri $nwsAPIs.Stations
