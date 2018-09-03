@@ -1,3 +1,31 @@
+<#
+.SYNOPSIS
+Get weather data from the specified zipcode.
+
+.DESCRIPTION
+Get weatehr data releated to the current conditions, forecast, and hourly conditions from the specified zipcode. Weather data is retrieved from the National Weather Service.
+
+.PARAMETER ZipCode
+The zipcode for the location to grab weather data from.
+
+.PARAMETER Current
+Get the current conditions.
+
+.PARAMETER Forecast
+Get the weekly forecast.
+
+.PARAMETER Hourly
+Get the next twelve hours of hourly conditions.
+
+.EXAMPLE
+Get-Weather -ZipCode 36602 -Current
+
+.EXAMPLE
+Get-Weather -ZipCode 36602 -Hourly
+
+.NOTES
+If too many switches are provided, the first switch provided will be the only one to return data.
+#>
 function Get-Weather {
 
     [cmdletbinding()]
