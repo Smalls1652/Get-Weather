@@ -71,6 +71,45 @@ function Get-Weather {
         return $apiCall
     }
 
+    function getRainChance {
+
+        param(
+            [string]$iconurl
+        )
+
+        $regexIcons = ($iconurl | Select-String 'https:\/\/api\.weather\.gov\/icons\/.*?\/(?:day|night)\/(?:(?<condition1>.*)\/(?<condition2>.*?)|(?<condition>.*))(?=\?size=.*)')
+
+        #$regexIcons.Matches.Groups
+        if ((($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition1").Value) -and (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition2").Value)) {
+
+            $conditionOne = (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition1").Value | Select-String -Pattern "(?:.*?,)(?<chance>.*)").Matches.Groups | Where-Object -Property "Name" -eq "chance" | Select-Object -ExpandProperty "Value"
+            $conditionTwo = (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition2").Value | Select-String -Pattern "(?:.*?,)(?<chance>.*)").Matches.Groups | Where-Object -Property "Name" -eq "chance" | Select-Object -ExpandProperty "Value"
+
+            if (!$conditionOne) {
+                $conditionOne = 0
+            }
+            if (!$conditionTwo) {
+                $conditionTwo = 0
+            }
+
+            $percentChance = "$($conditionOne)% -> $($conditionTwo)%"
+        }
+        elseif (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition").Value) {
+            $condition = ($regexIcons.Matches.Groups | Select-String -Pattern "(?:.*?,)(?<chance>.*)" | Where-Object -Property "Name" -eq "chance")
+            if ($condition) {
+                $percentChance = $condition.Value.ToString() + "%"
+            }
+            else {
+                $percentChance = "0%"
+            }
+        }
+        else {
+            $percentChance = "0%"
+        }
+
+        return $percentChance
+    }
+
     #Grabs the current conditions from the first observation station.
     function getCurrentConditions {
         param (
@@ -128,38 +167,10 @@ function Get-Weather {
 
         $forecastData = runAPICall -apiUri $apiUri
 
+        $percentChance = getRainChance -iconurl $period.icon
+
         foreach ($period in $forecastData.properties.periods) {
             $forecastPeriod = New-Object -TypeName pscustomobject
-
-            $regexIcons = ($period.icon | Select-String 'https:\/\/api\.weather\.gov\/icons\/.*?\/(?:day|night)\/(?:(?<condition1>.*)\/(?<condition2>.*?)|(?<condition>.*))(?=\?size=.*)')
-
-            #$regexIcons.Matches.Groups
-            if ((($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition1").Value) -and (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition2").Value)) {
-
-                $conditionOne = (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition1").Value | Select-String -Pattern "(?:.*?,)(?<chance>.*)").Matches.Groups | Where-Object -Property "Name" -eq "chance" | Select-Object -ExpandProperty "Value"
-                $conditionTwo = (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition2").Value | Select-String -Pattern "(?:.*?,)(?<chance>.*)").Matches.Groups | Where-Object -Property "Name" -eq "chance" | Select-Object -ExpandProperty "Value"
-
-                if (!$conditionOne) {
-                    $conditionOne = 0
-                }
-                if (!$conditionTwo) {
-                    $conditionTwo = 0
-                }
-
-                $percentChance = "$($conditionOne)% -> $($conditionTwo)%"
-            }
-            elseif (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition").Value) {
-                $condition = ($regexIcons.Matches.Groups | Select-String -Pattern "(?:.*?,)(?<chance>.*)" | Where-Object -Property "Name" -eq "chance")
-                if ($condition) {
-                    $percentChance = $condition.Value.ToString() + "%"
-                }
-                else {
-                    $percentChance = "0%"
-                }
-            }
-            else {
-                $percentChance = "0%"
-            }
 
             Add-Member -InputObject $forecastPeriod -MemberType NoteProperty -Name "Day" -Value $period.name
             Add-Member -InputObject $forecastPeriod -MemberType NoteProperty -Name "Temperature (F)" -Value $period.temperature
@@ -184,33 +195,7 @@ function Get-Weather {
 
             $regexIcons = ($period.icon | Select-String 'https:\/\/api\.weather\.gov\/icons\/.*?\/(?:day|night)\/(?:(?<condition1>.*)\/(?<condition2>.*?)|(?<condition>.*))(?=\?size=.*)')
 
-            #$regexIcons.Matches.Groups
-            if ((($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition1").Value) -and (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition2").Value)) {
-
-                $conditionOne = (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition1").Value | Select-String -Pattern "(?:.*?,)(?<chance>.*)").Matches.Groups | Where-Object -Property "Name" -eq "chance" | Select-Object -ExpandProperty "Value"
-                $conditionTwo = (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition2").Value | Select-String -Pattern "(?:.*?,)(?<chance>.*)").Matches.Groups | Where-Object -Property "Name" -eq "chance" | Select-Object -ExpandProperty "Value"
-
-                if (!$conditionOne) {
-                    $conditionOne = 0
-                }
-                if (!$conditionTwo) {
-                    $conditionTwo = 0
-                }
-
-                $percentChance = "$($conditionOne)% -> $($conditionTwo)%"
-            }
-            elseif (($regexIcons.Matches.Groups | Where-Object -Property "Name" -eq "condition").Value) {
-                $condition = ($regexIcons.Matches.Groups | Select-String -Pattern "(?:.*?,)(?<chance>.*)" | Where-Object -Property "Name" -eq "chance")
-                if ($condition) {
-                    $percentChance = $condition.Value.ToString() + "%"
-                }
-                else {
-                    $percentChance = "0%"
-                }
-            }
-            else {
-                $percentChance = "0%"
-            }
+            $percentChance = getRainChance -iconurl $period.icon
 
             Add-Member -InputObject $hourlyPeriod -MemberType NoteProperty -Name "Hour" -Value $period.startTime
             Add-Member -InputObject $hourlyPeriod -MemberType NoteProperty -Name "Temperature (F)" -Value $period.temperature
@@ -249,7 +234,7 @@ function Get-Weather {
     Running through the switches provided by the user.
     Only one switch can be ran at any given time.
     If more than one switch is provided, then it runs the first provided switch.
-    
+
     #>
     switch ($PSBoundParameters.GetEnumerator() | Where-Object -Property "Value" -eq $true | Select-Object -ExpandProperty "Key") {
         default {
