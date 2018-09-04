@@ -28,12 +28,15 @@ If too many switches are provided, the first switch provided will be the only on
 #>
 function Get-Weather {
 
-    [cmdletbinding()]
+    [cmdletbinding(DefaultParameterSetName='CurrentForecast')]
 
     param(
         [string]$ZipCode,
+        [Parameter(ParameterSetName='CurrentForecast')]
         [switch]$Current,
+        [Parameter(ParameterSetName='ForecastSummary')]
         [switch]$Forecast,
+        [Parameter(ParameterSetName='HourlyForecast')]
         [switch]$Hourly
     )
 
@@ -234,20 +237,16 @@ function Get-Weather {
     If more than one switch is provided, then it runs the first provided switch.
 
     #>
-    switch ($PSBoundParameters.GetEnumerator() | Where-Object -Property "Value" -eq $true | Select-Object -ExpandProperty "Key") {
-        default {
+    switch ($PsCmdlet.ParameterSetName) {
+        "CurrentForecast" {
             getCurrentConditions -apiUri $nwsAPIs.Stations
             break
         }
-        "Current" {
-            getCurrentConditions -apiUri $nwsAPIs.Stations
-            break
-        }
-        "Forecast" {
+        "ForecastSummary" {
             getForecast -apiUri $nwsAPIs.Forecast
             break
         }
-        "Hourly" {
+        "HourlyForecast" {
             getHourly -apiUri $nwsAPIs.Hourly
             break
         }
